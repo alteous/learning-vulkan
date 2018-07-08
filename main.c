@@ -1,3 +1,12 @@
+/*
+ * Aim:
+ *
+ * 1. Create a render pass with a colour attachment.
+ * 2. Clear the colour attachment to a solid yellow colour.
+ * 3. Copy the contents of the colour attachment to a host-visible image.
+ * 4. Confirm the the host-visible image is now yellow.
+ */
+
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
