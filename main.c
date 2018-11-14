@@ -11,15 +11,14 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <errno.h>
-
 #include <vulkan/vulkan.h>
 
 #define COUNT(x) (sizeof(x) / sizeof(*(x)))
 
-void assert(int condition, const char *description)
+void check(int condition, const char *description)
 {
     if (!condition) {
-	printf("assertion failed: %s\n", description);
+	printf("check condition failed: %s\n", description);
 	exit(-1);
     }
 }
@@ -101,14 +100,14 @@ int main(int argc, char **argv)
 	    .ppEnabledLayerNames = instance_layers,
 	};
 	res = vkCreateInstance(&args, allocator, &instance);
-	assert(res == VK_SUCCESS, "");
+	check(res == VK_SUCCESS, "");
     }
 
     /* Find a GPU to render with and grab its properties */
     {
 	uint32_t count = 1;
 	res = vkEnumeratePhysicalDevices(instance, &count, &physical_device);
-	assert(res == VK_SUCCESS, "");
+	check(res == VK_SUCCESS, "");
 
 	VkPhysicalDeviceProperties dprops;
 	vkGetPhysicalDeviceProperties(physical_device, &dprops);
@@ -118,7 +117,7 @@ int main(int argc, char **argv)
 	printf("Device ID: %d\n", (int)dprops.deviceID);
 	printf("Device name: %s\n", dprops.deviceName);
 	puts("");
-	
+
 	vkGetPhysicalDeviceMemoryProperties(physical_device, &memory_properties);
 	for (uint32_t i = 0; i < memory_properties.memoryTypeCount; ++i) {
 	    printf("Memory type #%d\n", (int)i);
@@ -150,7 +149,7 @@ int main(int argc, char **argv)
 	}
 
 	queue_family_index = 0;
-	assert(qprops[queue_family_index].queueFlags & (VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_TRANSFER_BIT), "");
+	check(qprops[queue_family_index].queueFlags & (VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_TRANSFER_BIT), "");
     }
 
     /* Create a connection from the Vulkan API (VkInstance) to the GPU (VkPhysicalDevice) */
@@ -167,7 +166,7 @@ int main(int argc, char **argv)
 	    .pQueueCreateInfos = &queue_args,
 	};
 	res = vkCreateDevice(physical_device, &args, allocator, &device);
-	assert(res == VK_SUCCESS, "vkCreateDevice");
+	check(res == VK_SUCCESS, "vkCreateDevice");
 	vkGetDeviceQueue(device, queue_family_index, 0, &queue);
     }
 
@@ -187,7 +186,7 @@ int main(int argc, char **argv)
 	    .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
 	};
 	res = vkCreateImage(device, &args, allocator, &write_image);
-	assert(res == VK_SUCCESS, "vkCreateImage(write_image)");
+	check(res == VK_SUCCESS, "vkCreateImage(write_image)");
     }
 
     /* Create and bind memory to the write_image */
@@ -197,7 +196,7 @@ int main(int argc, char **argv)
 	uint32_t memory_type;
 	VkMemoryPropertyFlags desired_flags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 	res = find_appropriate_memory_type(reqs, desired_flags, &memory_type);
-	assert(res == 0, "find_appropriate_memory_type for write_image");
+	check(res == 0, "find_appropriate_memory_type for write_image");
 	printf("Chosen memory type for write_image: %d\n", (int)memory_type);
 	puts("");
 	VkMemoryAllocateInfo margs = {
@@ -206,9 +205,9 @@ int main(int argc, char **argv)
 	    .memoryTypeIndex = memory_type,
 	};
 	res = vkAllocateMemory(device, &margs, allocator, &write_image_memory);
-	assert(res == VK_SUCCESS, "vkAllocateMemory(write_image)");
+	check(res == VK_SUCCESS, "vkAllocateMemory(write_image)");
 	res = vkBindImageMemory(device, write_image, write_image_memory, 0);
-	assert(res == VK_SUCCESS, "vkBindImageMemory(write_image)");
+	check(res == VK_SUCCESS, "vkBindImageMemory(write_image)");
 	VkImageViewCreateInfo vargs = {
 	    .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
 	    .image = write_image,
@@ -221,7 +220,7 @@ int main(int argc, char **argv)
 	    },
 	};
 	res = vkCreateImageView(device, &vargs, allocator, &write_image_view);
-	assert(res == VK_SUCCESS, "vkCreateImageView(write_image)");
+	check(res == VK_SUCCESS, "vkCreateImageView(write_image)");
     }
 
     /* Create the read_image to copy the render result to */
@@ -240,7 +239,7 @@ int main(int argc, char **argv)
 	    .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
 	};
 	res = vkCreateImage(device, &args, allocator, &read_image);
-	assert(res == VK_SUCCESS, "vkCreateImage(read_image)");
+	check(res == VK_SUCCESS, "vkCreateImage(read_image)");
     }
 
     /* Create and bind memory to the read_image */
@@ -250,7 +249,7 @@ int main(int argc, char **argv)
 	uint32_t memory_type;
 	VkMemoryPropertyFlags desired_flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
 	res = find_appropriate_memory_type(reqs, desired_flags, &memory_type);
-	assert(res == 0, "find_appropriate_memory_type for read_image");
+	check(res == 0, "find_appropriate_memory_type for read_image");
 	printf("Chosen memory type for write_image: %d\n", (int)memory_type);
 	puts("");
 	VkMemoryAllocateInfo margs = {
@@ -259,9 +258,9 @@ int main(int argc, char **argv)
 	    .memoryTypeIndex = memory_type,
 	};
 	res = vkAllocateMemory(device, &margs, allocator, &read_image_memory);
-	assert(res == VK_SUCCESS, "vkAllocateMemory(read_image)");
+	check(res == VK_SUCCESS, "vkAllocateMemory(read_image)");
 	res = vkBindImageMemory(device, read_image, read_image_memory, 0);
-	assert(res == VK_SUCCESS, "vkBindImageMemory(read_image)");
+	check(res == VK_SUCCESS, "vkBindImageMemory(read_image)");
 	VkImageViewCreateInfo vargs = {
 	    .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
 	    .image = read_image,
@@ -274,7 +273,7 @@ int main(int argc, char **argv)
 	    },
 	};
 	res = vkCreateImageView(device, &vargs, allocator, &read_image_view);
-	assert(res == VK_SUCCESS, "vkCreateImageView(read_image)");
+	check(res == VK_SUCCESS, "vkCreateImageView(read_image)");
     }
 
     /* Create the graphics pipeline */
@@ -303,7 +302,7 @@ int main(int argc, char **argv)
 	    .pSubpasses = &subpass_description,
 	};
 	res = vkCreateRenderPass(device, &args, allocator, &render_pass);
-	assert(res == VK_SUCCESS, "vkCreateRenderPass");
+	check(res == VK_SUCCESS, "vkCreateRenderPass");
     }
 
     /* Create a framebuffer to render to */
@@ -318,7 +317,7 @@ int main(int argc, char **argv)
 	    .renderPass = render_pass,
 	};
 	res = vkCreateFramebuffer(device, &args, allocator, &framebuffer);
-	assert(res == VK_SUCCESS, "vkFramebufferCreateInfo");
+	check(res == VK_SUCCESS, "vkFramebufferCreateInfo");
     }
 
     /* Create a command pool in order to create a command buffer */
@@ -328,7 +327,7 @@ int main(int argc, char **argv)
 	    .queueFamilyIndex = queue_family_index,
 	};
 	res = vkCreateCommandPool(device, &args, allocator, &command_pool);
-	assert(res == VK_SUCCESS, "vkCommandPoolCreateInfo");
+	check(res == VK_SUCCESS, "vkCommandPoolCreateInfo");
     }
 
     /* Create a command buffer from the command pool */
@@ -339,7 +338,7 @@ int main(int argc, char **argv)
 	    .commandBufferCount = 1,
 	};
 	res = vkAllocateCommandBuffers(device, &args, &command_buffer);
-	assert(res == VK_SUCCESS, "vkAllocateCommandBuffers");
+	check(res == VK_SUCCESS, "vkAllocateCommandBuffers");
     }
 
     /* Commence recording commands */
@@ -349,22 +348,16 @@ int main(int argc, char **argv)
 	    .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
 	};
 	res = vkBeginCommandBuffer(command_buffer, &args);
-	assert(res == VK_SUCCESS, "vkBeginCommandBuffer");
+	check(res == VK_SUCCESS, "vkBeginCommandBuffer");
     }
     
-    /* Record rendering commands */
+    /* Begin recording rendering commands */
     {
-	VkClearValue clear = {
-	    .color.uint32[0] = UINT32_MAX,
-	    .color.uint32[1] = UINT32_MAX,
-	};
 	VkRenderPassBeginInfo args = {
 	    .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
 	    .renderPass = render_pass,
 	    .framebuffer = framebuffer,
 	    .renderArea = { .extent.width = 400, .extent.height = 400 },
-	    .clearValueCount = 1,
-	    .pClearValues = &clear,
 	};
 	VkSubpassContents contents = VK_SUBPASS_CONTENTS_INLINE;
 	vkCmdBeginRenderPass(command_buffer, &args, contents);
@@ -384,10 +377,7 @@ int main(int argc, char **argv)
 	VkClearAttachment args = {
 	    .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
 	    .colorAttachment = 0,
-	    .clearValue.color = {
-		.uint32[0] = UINT32_MAX,
-		.uint32[1] = UINT32_MAX,
-	    },
+	    .clearValue.color.float32 = {1.0, 1.0, 0.0, 1.0},
 	};
 	vkCmdClearAttachments(command_buffer, 1, &args, 1, &rect);
 	vkCmdEndRenderPass(command_buffer);
@@ -521,7 +511,7 @@ int main(int argc, char **argv)
     /* Stop recording commands */
     {
 	res = vkEndCommandBuffer(command_buffer);
-	assert(res == VK_SUCCESS, "vkEndCommandBuffer");
+	check(res == VK_SUCCESS, "vkEndCommandBuffer");
     }
 
     /* Create a fence to signal the completion of GPU work */
@@ -530,7 +520,7 @@ int main(int argc, char **argv)
 	    .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
 	};
 	res = vkCreateFence(device, &args, allocator, &fence);
-	assert(res == VK_SUCCESS, "vkCreateFence");
+	check(res == VK_SUCCESS, "vkCreateFence");
     }
     
     /* Submit command buffer into the queue */
@@ -541,13 +531,13 @@ int main(int argc, char **argv)
 	    .pCommandBuffers = &command_buffer,
 	};
 	res = vkQueueSubmit(queue, 1, &args, fence);
-	assert(res == VK_SUCCESS, "vkQueueSubmit");
+	check(res == VK_SUCCESS, "vkQueueSubmit");
     }
 
     /* Wait for GPU work to complete */
     {
 	res = vkWaitForFences(device, 1, &fence, VK_TRUE, UINT64_MAX);
-	assert(res == VK_SUCCESS, "vkWaitForFence");
+	check(res == VK_SUCCESS, "vkWaitForFence");
     }
 
     /* Read back the results */
@@ -555,8 +545,17 @@ int main(int argc, char **argv)
 	void *data;
 	VkDeviceSize offset = 0, size = VK_WHOLE_SIZE;
 	res = vkMapMemory(device, read_image_memory, offset, size, 0, &data);
-	assert(res == VK_SUCCESS, "vkMapMemory");
-	printf("%d, %d, %d, %d\n", (int)((char *)data)[0], (int)((char *)data)[1], (int)((char *)data)[2], (int)((char *)data)[3]);
+	check(res == VK_SUCCESS, "vkMapMemory");
+	uint32_t pixel = *(uint32_t *)data;
+	uint8_t red = pixel & 0xff;
+	uint8_t green = (pixel >> 8) & 0xff;
+	uint8_t blue = (pixel >> 16) & 0xff;
+	uint8_t alpha = (pixel >> 24) & 0xff;
+	printf("r = %#x, g = %#x, b = %#x, a = %#x\n", red, green, blue, alpha);
+	check(red == 0xff, "red == 0xff");
+	check(green == 0xff, "green == 0xff");
+	check(blue == 0, "blue == 0");
+	check(alpha == 0xff, "alpha == 0xff");
     }
 
     return 0;
