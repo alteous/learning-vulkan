@@ -1,2 +1,2 @@
 #!/bin/bash
-cc -o main main.c -lvulkan && ./main
+g++ -std=c++11 -o main main.c++ -lvulkan && ./main
